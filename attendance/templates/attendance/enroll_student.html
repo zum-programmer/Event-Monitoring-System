@@ -1,0 +1,160 @@
+{% extends "attendance/base.html" %}
+
+{% block content %}
+<style>
+    .page { max-width: 1150px; margin: 0 auto; }
+    .hero {
+        background: linear-gradient(135deg, #111827, #1f2937);
+        color: white;
+        padding: 30px;
+        border-radius: 18px;
+        margin-bottom: 22px;
+    }
+    .hero h1 { margin: 0 0 7px; font-size: 30px; }
+    .hero p { margin: 0; color: #d1d5db; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 22px; }
+    .card {
+        background: white;
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 6px 24px rgba(0,0,0,.07);
+    }
+    .card h2 { margin: 0 0 7px; }
+    .muted { color: #6b7280; margin-top: 0; }
+    .field { margin-bottom: 17px; }
+    .field label { display:block; font-weight:700; margin-bottom:7px; }
+    .form-input {
+        width:100%; padding:12px 14px; border:1px solid #d1d5db;
+        border-radius:9px; font-size:15px; outline:none;
+    }
+    .form-input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+    .id-field { font-size:20px; font-weight:700; }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .save {
+        width:100%; border:0; border-radius:9px; padding:13px 18px;
+        background:#2563eb; color:white; font-size:16px; font-weight:700; cursor:pointer;
+    }
+    .save:hover { background:#1d4ed8; }
+    .error { color:#b91c1c; font-size:13px; margin-top:5px; }
+    .summary { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .count { background:#eff6ff; color:#1d4ed8; padding:8px 12px; border-radius:999px; font-weight:700; }
+    .search { margin-bottom:15px; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:12px 10px; border-bottom:1px solid #eef0f3; text-align:left; white-space:nowrap; }
+    th { color:#6b7280; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .student-id { font-weight:800; color:#111827; }
+    .empty { text-align:center; color:#6b7280; padding:30px; }
+    @media(max-width:900px) { .grid { grid-template-columns:1fr; } }
+    @media(max-width:600px) { .two { grid-template-columns:1fr; } .card, .hero { padding:22px; } }
+</style>
+
+<div class="page">
+    <div class="hero">
+        <h1>Enroll Student</h1>
+        <p>Register a student's Number ID before they can check in to an event.</p>
+    </div>
+
+    <div class="grid">
+        <section class="card">
+            <h2>Student Information</h2>
+            <p class="muted">The Number ID must be unique.</p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="field">
+                    <label for="{{ form.number_id.id_for_label }}">Number ID *</label>
+                    {{ form.number_id }}
+                    {% for error in form.number_id.errors %}<div class="error">{{ error }}</div>{% endfor %}
+                </div>
+
+                <div class="two">
+                    <div class="field">
+                        <label for="{{ form.first_name.id_for_label }}">First Name *</label>
+                        {{ form.first_name }}
+                        {% for error in form.first_name.errors %}<div class="error">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.last_name.id_for_label }}">Last Name *</label>
+                        {{ form.last_name }}
+                        {% for error in form.last_name.errors %}<div class="error">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="{{ form.email.id_for_label }}">Email</label>
+                    {{ form.email }}
+                    {% for error in form.email.errors %}<div class="error">{{ error }}</div>{% endfor %}
+                </div>
+
+                <div class="two">
+                    <div class="field">
+                        <label for="{{ form.course.id_for_label }}">Course</label>
+                        {{ form.course }}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.year_level.id_for_label }}">Year Level</label>
+                        {{ form.year_level }}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}<div class="error">{{ error }}</div>{% endfor %}
+                {% endif %}
+
+                <button class="save" type="submit">+ Enroll Student</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="summary">
+                <div>
+                    <h2>Enrolled Students</h2>
+                    <p class="muted">Students available for Number ID attendance checking.</p>
+                </div>
+                <span class="count">{{ total_students }} Total</span>
+            </div>
+
+            <input id="studentSearch" class="form-input search" type="search" placeholder="Search ID or student name..." autocomplete="off">
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Number ID</th>
+                            <th>Name</th>
+                            <th>Course</th>
+                            <th>Year</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTable">
+                        {% for student in attendees %}
+                        <tr>
+                            <td class="student-id">{{ student.number_id }}</td>
+                            <td>{{ student.first_name }} {{ student.last_name }}</td>
+                            <td>{{ student.course|default:"—" }}</td>
+                            <td>{{ student.year_level|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td class="empty" colspan="4">No students enrolled yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+const search = document.getElementById("studentSearch");
+if (search) {
+    search.addEventListener("input", function () {
+        const term = this.value.toLowerCase().trim();
+        document.querySelectorAll("#studentTable tr").forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(term) ? "" : "none";
+        });
+    });
+}
+</script>
+{% endblock %}

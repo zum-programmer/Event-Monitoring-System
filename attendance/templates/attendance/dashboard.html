@@ -1,0 +1,402 @@
+{% extends "attendance/base.html" %}
+
+{% block content %}
+
+<style>
+    .dashboard { max-width: 1200px; margin: auto; }
+
+    .event-header {
+        background: #111827;
+        color: white;
+        padding: 30px;
+        border-radius: 18px;
+        margin-bottom: 25px;
+    }
+
+    .event-header h1 { margin: 0 0 8px; font-size: 30px; }
+    .event-header p { margin: 5px 0; color: #d1d5db; }
+
+    .scanner-card {
+        background: white;
+        border-radius: 18px;
+        padding: 40px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+
+    .scanner-card h2 { font-size: 24px; margin-bottom: 25px; }
+
+    .id-input {
+        width: 100%;
+        max-width: 600px;
+        padding: 20px;
+        font-size: 28px;
+        text-align: center;
+        border: 2px solid #d1d5db;
+        border-radius: 12px;
+        outline: none;
+    }
+
+    .id-input:focus { border-color: #2563eb; }
+
+    .check-button {
+        margin-top: 15px;
+        width: 100%;
+        max-width: 600px;
+        padding: 17px;
+        border: none;
+        border-radius: 10px;
+        background: #2563eb;
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .check-button:hover { background: #1d4ed8; }
+
+    .result {
+        display: none;
+        margin: 25px auto 0;
+        max-width: 600px;
+        padding: 25px;
+        border-radius: 15px;
+    }
+
+    .result.present {
+        display: block;
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .result.already {
+        display: block;
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .result.not-found {
+        display: block;
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .result h2 { margin: 0 0 10px; font-size: 30px; }
+    .person-name { font-size: 22px; font-weight: bold; }
+    .person-details { margin-top: 8px; }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin-top: 25px;
+    }
+
+    .stat {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,.06);
+    }
+
+    .stat-number { font-size: 32px; font-weight: bold; }
+    .stat-label { color: #6b7280; margin-top: 5px; }
+
+    .recent {
+        background: white;
+        margin-top: 25px;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,.06);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+        padding: 14px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    th { color: #6b7280; font-size: 14px; }
+
+    .badge {
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .badge-present {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    @media(max-width:800px) {
+        .stats { grid-template-columns: repeat(2, 1fr); }
+        .scanner-card { padding: 25px 15px; }
+        .id-input { font-size: 22px; }
+        table { font-size: 13px; }
+    }
+</style>
+
+<div class="dashboard">
+
+{% if event %}
+
+    <div class="event-header">
+        <h1>{{ event.name }}</h1>
+        <p>📍 {{ event.location }}</p>
+        <p>
+            📅 {{ event.date }}
+            &nbsp; • &nbsp;
+            ⏰ {{ event.start_time }} - {{ event.end_time }}
+        </p>
+    </div>
+
+    <div class="scanner-card">
+        <h2>Attendance Check-In</h2>
+        <p>Enter or scan the attendee's Number ID</p>
+
+        <form id="attendanceForm">
+            {% csrf_token %}
+
+            <input
+                type="text"
+                id="numberId"
+                class="id-input"
+                placeholder="Enter Number ID"
+                autocomplete="off"
+                autofocus
+                required
+            >
+
+            <input
+                type="hidden"
+                id="eventId"
+                value="{{ event.id }}"
+            >
+
+            <button class="check-button" type="submit">
+                CHECK ATTENDANCE
+            </button>
+        </form>
+
+        <div id="result" class="result">
+            <h2 id="resultTitle"></h2>
+            <div id="resultName" class="person-name"></div>
+            <div id="resultDetails" class="person-details"></div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-number">{{ total_registered }}</div>
+            <div class="stat-label">REGISTERED</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-number" id="presentCount">{{ total_present }}</div>
+            <div class="stat-label">PRESENT</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-number">{{ total_late }}</div>
+            <div class="stat-label">LATE</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-number" id="absentCount">{{ total_absent }}</div>
+            <div class="stat-label">ABSENT</div>
+        </div>
+    </div>
+
+    <div class="recent">
+        <h2>Recent Attendance</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Number ID</th>
+                    <th>Name</th>
+                    <th>Course</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody id="attendanceTable">
+                {% for record in recent_attendance %}
+                <tr>
+                    <td>{{ record.attendee.number_id }}</td>
+                    <td>
+                        {{ record.attendee.first_name }}
+                        {{ record.attendee.last_name }}
+                    </td>
+                    <td>{{ record.attendee.course }}</td>
+                    <td>{{ record.check_in|date:"h:i:s A" }}</td>
+                    <td>
+                        <span class="badge badge-present">
+                            {{ record.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr id="emptyRow">
+                    <td colspan="5">No attendance recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% else %}
+
+    <div class="scanner-card">
+        <h2>No Event Available</h2>
+        <p>Please create an event first in the Django admin.</p>
+    </div>
+
+{% endif %}
+
+</div>
+
+<script>
+const form = document.getElementById("attendanceForm");
+
+if (form) {
+    const numberInput = document.getElementById("numberId");
+    const result = document.getElementById("result");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultName = document.getElementById("resultName");
+    const resultDetails = document.getElementById("resultDetails");
+
+    form.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const numberId = numberInput.value.trim();
+        const eventId = document.getElementById("eventId").value;
+
+        if (!numberId) {
+            numberInput.focus();
+            return;
+        }
+
+        const csrfToken =
+            document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+        fetch("{% url 'check_number_id' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": csrfToken
+            },
+            body: new URLSearchParams({
+                number_id: numberId,
+                event_id: eventId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            result.className = "result";
+            result.style.display = "block";
+
+            if (data.status === "present") {
+                result.classList.add("present");
+
+                resultTitle.innerHTML = "✓ PRESENT";
+                resultName.innerHTML = data.attendee.name;
+
+                resultDetails.innerHTML =
+                    "ID: " + data.attendee.number_id +
+                    "<br>Course: " + data.attendee.course +
+                    "<br>Year Level: " + data.attendee.year_level +
+                    "<br>Check-in: " + data.check_in;
+
+                const presentCount =
+                    document.getElementById("presentCount");
+
+                presentCount.innerText =
+                    parseInt(presentCount.innerText) + 1;
+
+                const absentCount =
+                    document.getElementById("absentCount");
+
+                absentCount.innerText =
+                    Math.max(
+                        parseInt(absentCount.innerText) - 1,
+                        0
+                    );
+
+                addAttendanceRow(data);
+
+            } else if (data.status === "already_checked_in") {
+                result.classList.add("already");
+
+                resultTitle.innerHTML = "⚠ ALREADY CHECKED IN";
+                resultName.innerHTML = data.attendee.name;
+
+                resultDetails.innerHTML =
+                    "ID: " + data.attendee.number_id +
+                    "<br>Course: " + data.attendee.course +
+                    "<br>Already checked in at " + data.check_in;
+
+            } else if (data.status === "not_found") {
+                result.classList.add("not-found");
+
+                resultTitle.innerHTML = "✕ ID NOT FOUND";
+                resultName.innerHTML = "No attendee found";
+
+                resultDetails.innerHTML =
+                    "Number ID: " + data.number_id;
+
+            } else {
+                result.classList.add("not-found");
+
+                resultTitle.innerHTML = "✕ ERROR";
+                resultName.innerHTML = data.message;
+            }
+
+            numberInput.value = "";
+            numberInput.focus();
+        })
+        .catch(error => {
+            console.error(error);
+
+            result.className = "result not-found";
+            result.style.display = "block";
+
+            resultTitle.innerHTML = "✕ SYSTEM ERROR";
+            resultName.innerHTML =
+                "Unable to process attendance.";
+
+            numberInput.focus();
+        });
+    });
+
+    function addAttendanceRow(data) {
+        const table = document.getElementById("attendanceTable");
+        const emptyRow = document.getElementById("emptyRow");
+
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${data.attendee.number_id}</td>
+            <td>${data.attendee.name}</td>
+            <td>${data.attendee.course}</td>
+            <td>${data.check_in}</td>
+            <td>
+                <span class="badge badge-present">
+                    PRESENT
+                </span>
+            </td>
+        `;
+
+        table.prepend(row);
+    }
+}
+</script>
+
+{% endblock %}
