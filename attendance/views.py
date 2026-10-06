@@ -27,14 +27,25 @@ def login_view(request):
 
 @login_required
 def dashboard(request):
-    event = Event.objects.order_by("-date", "-start_time").first()
+    # Get all events
+    events = Event.objects.order_by("-date", "-start_time")
 
-    if not event:
+    # Get selected event from URL
+    event_id = request.GET.get("event_id")
+
+    # No event selected yet
+    if not event_id:
         return render(
             request,
             "attendance/dashboard.html",
-            {"event": None},
+            {
+                "event": None,
+                "events": events,
+            },
         )
+
+    # Get the selected event
+    event = get_object_or_404(Event, id=event_id)
 
     total_registered = Attendee.objects.count()
 
@@ -53,11 +64,17 @@ def dashboard(request):
         check_in__isnull=False,
     ).count()
 
-    total_absent = max(total_registered - total_checked_in, 0)
+    total_absent = max(
+        total_registered - total_checked_in,
+        0
+    )
 
     recent_attendance = (
         Attendance.objects
-        .filter(event=event, check_in__isnull=False)
+        .filter(
+            event=event,
+            check_in__isnull=False,
+        )
         .select_related("attendee")
         .order_by("-check_in")[:10]
     )
@@ -67,6 +84,7 @@ def dashboard(request):
         "attendance/dashboard.html",
         {
             "event": event,
+            "events": events,
             "total_registered": total_registered,
             "total_present": total_present,
             "total_late": total_late,
@@ -80,40 +98,24 @@ def dashboard(request):
 def add_event(request):
     if request.method == "POST":
         form = EventForm(request.POST)
+
         if form.is_valid():
-            event = form.save(commit=False)
-            event.created_by = request.user
-            event.save()
-            return redirect("dashboard")
+            # Save the new event
+            event = form.save()
+
+            # Open the newly created event in the dashboard
+            return redirect(
+                f"/?event_id={event.id}"
+            )
+
     else:
         form = EventForm()
 
     return render(
         request,
         "attendance/add_event.html",
-        {"form": form},
-    )
-
-
-@login_required
-def enroll_student(request):
-    if request.method == "POST":
-        form = AttendeeForm(request.POST)
-        if form.is_valid():
-            attendee = form.save()
-            return redirect("enroll_student")
-    else:
-        form = AttendeeForm()
-
-    attendees = Attendee.objects.order_by("last_name", "first_name")[:50]
-
-    return render(
-        request,
-        "attendance/enroll_student.html",
         {
             "form": form,
-            "attendees": attendees,
-            "total_students": Attendee.objects.count(),
         },
     )
 
@@ -122,11 +124,18 @@ def enroll_student(request):
 def check_number_id(request):
     if request.method != "POST":
         return JsonResponse(
-            {"success": False, "message": "Invalid request."},
+            {
+                "success": False,
+                "message": "Invalid request."
+            },
             status=400,
         )
 
-    number_id = request.POST.get("number_id", "").strip()
+    number_id = request.POST.get(
+        "number_id",
+        ""
+    ).strip()
+
     event_id = request.POST.get("event_id")
 
     if not number_id:
@@ -143,10 +152,16 @@ def check_number_id(request):
             "message": "No event selected.",
         })
 
-    event = get_object_or_404(Event, id=event_id)
+    event = get_object_or_404(
+        Event,
+        id=event_id
+    )
 
     try:
-        attendee = Attendee.objects.get(number_id=number_id)
+        attendee = Attendee.objects.get(
+            number_id=number_id
+        )
+
     except Attendee.DoesNotExist:
         return JsonResponse({
             "success": False,
@@ -167,11 +182,16 @@ def check_number_id(request):
             "message": "Already Checked In",
             "attendee": {
                 "number_id": attendee.number_id,
-                "name": f"{attendee.first_name} {attendee.last_name}",
+                "name": (
+                    f"{attendee.first_name} "
+                    f"{attendee.last_name}"
+                ),
                 "course": attendee.course,
                 "year_level": attendee.year_level,
             },
-            "check_in": attendance.check_in.strftime("%I:%M:%S %p"),
+            "check_in": attendance.check_in.strftime(
+                "%I:%M:%S %p"
+            ),
         })
 
     now = timezone.now()
@@ -183,6 +203,7 @@ def check_number_id(request):
             check_in=now,
             status="Present",
         )
+
     else:
         attendance.check_in = now
         attendance.status = "Present"
@@ -194,9 +215,14 @@ def check_number_id(request):
         "message": "Present",
         "attendee": {
             "number_id": attendee.number_id,
-            "name": f"{attendee.first_name} {attendee.last_name}",
+            "name": (
+                f"{attendee.first_name} "
+                f"{attendee.last_name}"
+            ),
             "course": attendee.course,
             "year_level": attendee.year_level,
         },
-        "check_in": now.strftime("%I:%M:%S %p"),
+        "check_in": now.strftime(
+            "%I:%M:%S %p"
+        ),
     })

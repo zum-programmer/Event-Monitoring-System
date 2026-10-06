@@ -3,7 +3,66 @@
 {% block content %}
 
 <style>
-    .dashboard { max-width: 1200px; margin: auto; }
+    .dashboard {
+        max-width: 1200px;
+        margin: auto;
+    }
+
+    .event-selector-card {
+        background: white;
+        padding: 25px;
+        border-radius: 18px;
+        margin-bottom: 25px;
+        box-shadow: 0 6px 24px rgba(0,0,0,.07);
+    }
+
+    .event-selector-card h2 {
+        margin: 0 0 8px;
+        font-size: 22px;
+    }
+
+    .event-selector-card p {
+        margin: 0 0 18px;
+        color: #6b7280;
+    }
+
+    .event-selector-form {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .event-select {
+        flex: 1;
+        padding: 14px 16px;
+        font-size: 16px;
+        border: 2px solid #d1d5db;
+        border-radius: 10px;
+        outline: none;
+        background: white;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
+
+    .event-select:focus {
+        border-color: #2563eb;
+    }
+
+    .open-event-button {
+        padding: 14px 22px;
+        border: none;
+        border-radius: 10px;
+        background: #2563eb;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .open-event-button:hover {
+        background: #1d4ed8;
+    }
 
     .event-header {
         background: #111827;
@@ -13,8 +72,15 @@
         margin-bottom: 25px;
     }
 
-    .event-header h1 { margin: 0 0 8px; font-size: 30px; }
-    .event-header p { margin: 5px 0; color: #d1d5db; }
+    .event-header h1 {
+        margin: 0 0 8px;
+        font-size: 30px;
+    }
+
+    .event-header p {
+        margin: 5px 0;
+        color: #d1d5db;
+    }
 
     .scanner-card {
         background: white;
@@ -24,7 +90,10 @@
         box-shadow: 0 10px 30px rgba(0,0,0,.08);
     }
 
-    .scanner-card h2 { font-size: 24px; margin-bottom: 25px; }
+    .scanner-card h2 {
+        font-size: 24px;
+        margin-bottom: 25px;
+    }
 
     .id-input {
         width: 100%;
@@ -35,9 +104,12 @@
         border: 2px solid #d1d5db;
         border-radius: 12px;
         outline: none;
+        box-sizing: border-box;
     }
 
-    .id-input:focus { border-color: #2563eb; }
+    .id-input:focus {
+        border-color: #2563eb;
+    }
 
     .check-button {
         margin-top: 15px;
@@ -53,7 +125,9 @@
         cursor: pointer;
     }
 
-    .check-button:hover { background: #1d4ed8; }
+    .check-button:hover {
+        background: #1d4ed8;
+    }
 
     .result {
         display: none;
@@ -81,9 +155,19 @@
         color: #991b1b;
     }
 
-    .result h2 { margin: 0 0 10px; font-size: 30px; }
-    .person-name { font-size: 22px; font-weight: bold; }
-    .person-details { margin-top: 8px; }
+    .result h2 {
+        margin: 0 0 10px;
+        font-size: 30px;
+    }
+
+    .person-name {
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    .person-details {
+        margin-top: 8px;
+    }
 
     .stats {
         display: grid;
@@ -99,8 +183,15 @@
         box-shadow: 0 5px 20px rgba(0,0,0,.06);
     }
 
-    .stat-number { font-size: 32px; font-weight: bold; }
-    .stat-label { color: #6b7280; margin-top: 5px; }
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+    }
+
+    .stat-label {
+        color: #6b7280;
+        margin-top: 5px;
+    }
 
     .recent {
         background: white;
@@ -110,13 +201,21 @@
         box-shadow: 0 5px 20px rgba(0,0,0,.06);
     }
 
-    table { width: 100%; border-collapse: collapse; }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
     th, td {
         padding: 14px;
         text-align: left;
         border-bottom: 1px solid #eee;
     }
-    th { color: #6b7280; font-size: 14px; }
+
+    th {
+        color: #6b7280;
+        font-size: 14px;
+    }
 
     .badge {
         padding: 6px 10px;
@@ -131,32 +230,148 @@
     }
 
     @media(max-width:800px) {
-        .stats { grid-template-columns: repeat(2, 1fr); }
-        .scanner-card { padding: 25px 15px; }
-        .id-input { font-size: 22px; }
-        table { font-size: 13px; }
+
+        .event-selector-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .open-event-button {
+            width: 100%;
+        }
+
+        .stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .scanner-card {
+            padding: 25px 15px;
+        }
+
+        .id-input {
+            font-size: 22px;
+        }
+
+        table {
+            font-size: 13px;
+        }
     }
 </style>
 
+
 <div class="dashboard">
+
+
+    <!-- ================================= -->
+    <!-- EVENT SELECTOR -->
+    <!-- ================================= -->
+
+    <div class="event-selector-card">
+
+        <h2>Choose Event</h2>
+
+        <p>
+            Select the event you want to monitor.
+        </p>
+
+        {% if events %}
+
+        <form
+            method="GET"
+            action="{% url 'dashboard' %}"
+            class="event-selector-form"
+        >
+
+            <select
+                name="event_id"
+                class="event-select"
+                required
+            >
+
+                <option value="">
+                    -- Select Event --
+                </option>
+
+                {% for item in events %}
+
+                <option
+                    value="{{ item.id }}"
+                    {% if event and event.id == item.id %}
+                        selected
+                    {% endif %}
+                >
+                    {{ item.name }}
+                    —
+                    {{ item.date }}
+                    (
+                    {{ item.start_time }}
+                    -
+                    {{ item.end_time }}
+                    )
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+            <button
+                type="submit"
+                class="open-event-button"
+            >
+                OPEN EVENT
+            </button>
+
+        </form>
+
+        {% else %}
+
+        <p>
+            No events available. Please create an event first.
+        </p>
+
+        {% endif %}
+
+    </div>
+
 
 {% if event %}
 
+
+    <!-- ================================= -->
+    <!-- SELECTED EVENT -->
+    <!-- ================================= -->
+
     <div class="event-header">
+
         <h1>{{ event.name }}</h1>
-        <p>📍 {{ event.location }}</p>
+
+        <p>
+            📍 {{ event.location }}
+        </p>
+
         <p>
             📅 {{ event.date }}
             &nbsp; • &nbsp;
             ⏰ {{ event.start_time }} - {{ event.end_time }}
         </p>
+
     </div>
 
+
+    <!-- ================================= -->
+    <!-- ATTENDANCE SCANNER -->
+    <!-- ================================= -->
+
     <div class="scanner-card">
+
         <h2>Attendance Check-In</h2>
-        <p>Enter or scan the attendee's Number ID</p>
+
+        <p>
+            Enter or scan the attendee's Number ID
+        </p>
 
         <form id="attendanceForm">
+
             {% csrf_token %}
 
             <input
@@ -175,45 +390,113 @@
                 value="{{ event.id }}"
             >
 
-            <button class="check-button" type="submit">
+            <button
+                class="check-button"
+                type="submit"
+            >
                 CHECK ATTENDANCE
             </button>
+
         </form>
 
+
         <div id="result" class="result">
+
             <h2 id="resultTitle"></h2>
-            <div id="resultName" class="person-name"></div>
-            <div id="resultDetails" class="person-details"></div>
+
+            <div
+                id="resultName"
+                class="person-name"
+            ></div>
+
+            <div
+                id="resultDetails"
+                class="person-details"
+            ></div>
+
         </div>
+
     </div>
+
+
+    <!-- ================================= -->
+    <!-- STATISTICS -->
+    <!-- ================================= -->
 
     <div class="stats">
-        <div class="stat">
-            <div class="stat-number">{{ total_registered }}</div>
-            <div class="stat-label">REGISTERED</div>
-        </div>
 
         <div class="stat">
-            <div class="stat-number" id="presentCount">{{ total_present }}</div>
-            <div class="stat-label">PRESENT</div>
+
+            <div class="stat-number">
+                {{ total_registered }}
+            </div>
+
+            <div class="stat-label">
+                REGISTERED
+            </div>
+
         </div>
 
-        <div class="stat">
-            <div class="stat-number">{{ total_late }}</div>
-            <div class="stat-label">LATE</div>
-        </div>
 
         <div class="stat">
-            <div class="stat-number" id="absentCount">{{ total_absent }}</div>
-            <div class="stat-label">ABSENT</div>
+
+            <div
+                class="stat-number"
+                id="presentCount"
+            >
+                {{ total_present }}
+            </div>
+
+            <div class="stat-label">
+                PRESENT
+            </div>
+
         </div>
+
+
+        <div class="stat">
+
+            <div class="stat-number">
+                {{ total_late }}
+            </div>
+
+            <div class="stat-label">
+                LATE
+            </div>
+
+        </div>
+
+
+        <div class="stat">
+
+            <div
+                class="stat-number"
+                id="absentCount"
+            >
+                {{ total_absent }}
+            </div>
+
+            <div class="stat-label">
+                ABSENT
+            </div>
+
+        </div>
+
     </div>
 
+
+    <!-- ================================= -->
+    <!-- RECENT ATTENDANCE -->
+    <!-- ================================= -->
+
     <div class="recent">
+
         <h2>Recent Attendance</h2>
 
         <table>
+
             <thead>
+
                 <tr>
                     <th>Number ID</th>
                     <th>Name</th>
@@ -221,182 +504,348 @@
                     <th>Time</th>
                     <th>Status</th>
                 </tr>
+
             </thead>
 
+
             <tbody id="attendanceTable">
+
                 {% for record in recent_attendance %}
+
                 <tr>
-                    <td>{{ record.attendee.number_id }}</td>
+
+                    <td>
+                        {{ record.attendee.number_id }}
+                    </td>
+
                     <td>
                         {{ record.attendee.first_name }}
                         {{ record.attendee.last_name }}
                     </td>
-                    <td>{{ record.attendee.course }}</td>
-                    <td>{{ record.check_in|date:"h:i:s A" }}</td>
+
+                    <td>
+                        {{ record.attendee.course }}
+                    </td>
+
+                    <td>
+                        {{ record.check_in|date:"h:i:s A" }}
+                    </td>
+
                     <td>
                         <span class="badge badge-present">
                             {{ record.status }}
                         </span>
                     </td>
+
                 </tr>
+
                 {% empty %}
+
                 <tr id="emptyRow">
-                    <td colspan="5">No attendance recorded yet.</td>
+
+                    <td colspan="5">
+                        No attendance recorded yet.
+                    </td>
+
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
+
 
 {% else %}
 
+
+    <!-- ================================= -->
+    <!-- NO EVENT SELECTED -->
+    <!-- ================================= -->
+
     <div class="scanner-card">
-        <h2>No Event Available</h2>
-        <p>Please create an event first in the Django admin.</p>
+
+        <h2>Choose an Event</h2>
+
+        <p>
+            Select an event above to open its attendance dashboard.
+        </p>
+
     </div>
+
 
 {% endif %}
 
 </div>
 
+
 <script>
+
 const form = document.getElementById("attendanceForm");
 
 if (form) {
-    const numberInput = document.getElementById("numberId");
-    const result = document.getElementById("result");
-    const resultTitle = document.getElementById("resultTitle");
-    const resultName = document.getElementById("resultName");
-    const resultDetails = document.getElementById("resultDetails");
+
+    const numberInput =
+        document.getElementById("numberId");
+
+    const result =
+        document.getElementById("result");
+
+    const resultTitle =
+        document.getElementById("resultTitle");
+
+    const resultName =
+        document.getElementById("resultName");
+
+    const resultDetails =
+        document.getElementById("resultDetails");
+
 
     form.addEventListener("submit", function(event) {
+
         event.preventDefault();
 
-        const numberId = numberInput.value.trim();
-        const eventId = document.getElementById("eventId").value;
+        const numberId =
+            numberInput.value.trim();
+
+        const eventId =
+            document.getElementById("eventId").value;
+
 
         if (!numberId) {
+
             numberInput.focus();
+
             return;
+
         }
 
-        const csrfToken =
-            document.querySelector("[name=csrfmiddlewaretoken]").value;
 
-        fetch("{% url 'check_number_id' %}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-CSRFToken": csrfToken
-            },
-            body: new URLSearchParams({
-                number_id: numberId,
-                event_id: eventId
-            })
-        })
+        const csrfToken =
+            document.querySelector(
+                "[name=csrfmiddlewaretoken]"
+            ).value;
+
+
+        fetch(
+            "{% url 'check_number_id' %}",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded",
+
+                    "X-CSRFToken":
+                        csrfToken
+                },
+
+                body: new URLSearchParams({
+                    number_id: numberId,
+                    event_id: eventId
+                })
+            }
+        )
+
         .then(response => response.json())
+
         .then(data => {
+
             result.className = "result";
+
             result.style.display = "block";
 
+
             if (data.status === "present") {
+
                 result.classList.add("present");
 
-                resultTitle.innerHTML = "✓ PRESENT";
-                resultName.innerHTML = data.attendee.name;
+                resultTitle.innerHTML =
+                    "✓ PRESENT";
+
+                resultName.innerHTML =
+                    data.attendee.name;
+
 
                 resultDetails.innerHTML =
-                    "ID: " + data.attendee.number_id +
-                    "<br>Course: " + data.attendee.course +
-                    "<br>Year Level: " + data.attendee.year_level +
-                    "<br>Check-in: " + data.check_in;
+                    "ID: " +
+                    data.attendee.number_id +
+
+                    "<br>Course: " +
+                    data.attendee.course +
+
+                    "<br>Year Level: " +
+                    data.attendee.year_level +
+
+                    "<br>Check-in: " +
+                    data.check_in;
+
 
                 const presentCount =
-                    document.getElementById("presentCount");
+                    document.getElementById(
+                        "presentCount"
+                    );
 
                 presentCount.innerText =
-                    parseInt(presentCount.innerText) + 1;
+                    parseInt(
+                        presentCount.innerText
+                    ) + 1;
+
 
                 const absentCount =
-                    document.getElementById("absentCount");
+                    document.getElementById(
+                        "absentCount"
+                    );
 
                 absentCount.innerText =
                     Math.max(
-                        parseInt(absentCount.innerText) - 1,
+                        parseInt(
+                            absentCount.innerText
+                        ) - 1,
                         0
                     );
 
+
                 addAttendanceRow(data);
 
-            } else if (data.status === "already_checked_in") {
+
+            } else if (
+                data.status === "already_checked_in"
+            ) {
+
                 result.classList.add("already");
 
-                resultTitle.innerHTML = "⚠ ALREADY CHECKED IN";
-                resultName.innerHTML = data.attendee.name;
+                resultTitle.innerHTML =
+                    "⚠ ALREADY CHECKED IN";
+
+                resultName.innerHTML =
+                    data.attendee.name;
+
 
                 resultDetails.innerHTML =
-                    "ID: " + data.attendee.number_id +
-                    "<br>Course: " + data.attendee.course +
-                    "<br>Already checked in at " + data.check_in;
+                    "ID: " +
+                    data.attendee.number_id +
 
-            } else if (data.status === "not_found") {
+                    "<br>Course: " +
+                    data.attendee.course +
+
+                    "<br>Already checked in at " +
+                    data.check_in;
+
+
+            } else if (
+                data.status === "not_found"
+            ) {
+
                 result.classList.add("not-found");
 
-                resultTitle.innerHTML = "✕ ID NOT FOUND";
-                resultName.innerHTML = "No attendee found";
+                resultTitle.innerHTML =
+                    "✕ ID NOT FOUND";
+
+                resultName.innerHTML =
+                    "No attendee found";
+
 
                 resultDetails.innerHTML =
-                    "Number ID: " + data.number_id;
+                    "Number ID: " +
+                    data.number_id;
+
 
             } else {
+
                 result.classList.add("not-found");
 
-                resultTitle.innerHTML = "✕ ERROR";
-                resultName.innerHTML = data.message;
+                resultTitle.innerHTML =
+                    "✕ ERROR";
+
+                resultName.innerHTML =
+                    data.message;
+
             }
 
+
             numberInput.value = "";
+
             numberInput.focus();
+
         })
+
         .catch(error => {
+
             console.error(error);
 
-            result.className = "result not-found";
-            result.style.display = "block";
+            result.className =
+                "result not-found";
 
-            resultTitle.innerHTML = "✕ SYSTEM ERROR";
+            result.style.display =
+                "block";
+
+
+            resultTitle.innerHTML =
+                "✕ SYSTEM ERROR";
+
             resultName.innerHTML =
                 "Unable to process attendance.";
 
             numberInput.focus();
+
         });
+
     });
 
+
     function addAttendanceRow(data) {
-        const table = document.getElementById("attendanceTable");
-        const emptyRow = document.getElementById("emptyRow");
+
+        const table =
+            document.getElementById(
+                "attendanceTable"
+            );
+
+        const emptyRow =
+            document.getElementById(
+                "emptyRow"
+            );
 
         if (emptyRow) {
             emptyRow.remove();
         }
 
-        const row = document.createElement("tr");
+        const row =
+            document.createElement("tr");
 
         row.innerHTML = `
-            <td>${data.attendee.number_id}</td>
-            <td>${data.attendee.name}</td>
-            <td>${data.attendee.course}</td>
-            <td>${data.check_in}</td>
+
+            <td>
+                ${data.attendee.number_id}
+            </td>
+
+            <td>
+                ${data.attendee.name}
+            </td>
+
+            <td>
+                ${data.attendee.course}
+            </td>
+
+            <td>
+                ${data.check_in}
+            </td>
+
             <td>
                 <span class="badge badge-present">
                     PRESENT
                 </span>
             </td>
+
         `;
 
         table.prepend(row);
     }
+
 }
+
 </script>
 
 {% endblock %}
